@@ -1,12 +1,19 @@
-package jobs
+package product
 
 import (
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/juanjoss/off_etl/product"
+	"github.com/juanjoss/off_etl/db"
+	"github.com/juanjoss/off_etl/model"
 )
+
+type Generator func() <-chan model.ProductRes
+
+type Processor func(<-chan model.ProductRes) <-chan model.ProductRes
+
+type Consumer func(<-chan model.ProductRes)
 
 var (
 	apiPageNumber int
@@ -14,13 +21,7 @@ var (
 	apiPageSize   int
 )
 
-type Generator func() <-chan product.Product
-
-type Processor func(<-chan product.Product) <-chan product.Product
-
-type Consumer func(<-chan product.Product)
-
-func ETL() {
+func RunETL() {
 	start := time.Now()
 
 	fmt.Println("running ETL...")
@@ -28,7 +29,7 @@ func ETL() {
 	numProducts = 0
 
 	for i := 1; i <= 2; i++ {
-		printConsumer()(
+		load()(
 			transform()(
 				extract(uint(apiPageNumber))(),
 			),
@@ -52,8 +53,8 @@ func ETL() {
 
 // it creates product batches by fetching pages from the API endpoint
 func extract(page uint) Generator {
-	return func() <-chan product.Product {
-		products := make(chan product.Product)
+	return func() <-chan model.ProductRes {
+		products := make(chan model.ProductRes)
 
 		productsRes, err := Fetch(page)
 		if err != nil {
@@ -73,29 +74,16 @@ func extract(page uint) Generator {
 			}
 		}()
 
+		log.Println(len(productsRes.Products))
+
 		return products
 	}
 }
 
-// streaming generator
-// func randNumGenerator(max int) Generator {
-// 	return func() <-chan int {
-// 		out := make(chan int, 10)
-// 		rand.Seed(time.Now().UnixNano())
-// 		go func() {
-// 			for {
-// 				out <- rand.Intn(max)
-// 				time.Sleep(10 * time.Millisecond)
-// 			}
-// 		}()
-// 		return out
-// 	}
-// }
-
 // it takes product batches and makes transformations over them
 func transform() Processor {
-	return func(products <-chan product.Product) <-chan product.Product {
-		transformedProducts := make(chan product.Product)
+	return func(products <-chan model.ProductRes) <-chan model.ProductRes {
+		transformedProducts := make(chan model.ProductRes)
 
 		go func() {
 			defer close(transformedProducts)
@@ -112,15 +100,14 @@ func transform() Processor {
 	}
 }
 
-// it makes use of the transformed products
-func printConsumer() Consumer {
-	return func(products <-chan product.Product) {
+func load() Consumer {
+	return func(products <-chan model.ProductRes) {
 		for {
 			p, ok := <-products
 			if ok {
-				log.Println(p.Barcode, p.Name)
+				db.Get().Create(p)
 			} else {
-				return
+				log.Fatalf("error during product load process: ok = %v", ok)
 			}
 		}
 	}

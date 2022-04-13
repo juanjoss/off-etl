@@ -1,4 +1,4 @@
-package jobs
+package product
 
 import (
 	"encoding/json"
@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/juanjoss/off_etl/product"
+	"github.com/juanjoss/off_etl/model"
 )
 
-func Fetch(page uint) (*product.ProductsRes, error) {
+func Fetch(page uint) (*model.ProductsRes, error) {
 	url := fmt.Sprintf("https://world.openfoodfacts.org?json=true&page=%d", page)
 	fmt.Println("fetching URL: ", url)
 
@@ -23,7 +23,7 @@ func Fetch(page uint) (*product.ProductsRes, error) {
 		return nil, errors.New("status is not 200")
 	}
 
-	var products product.ProductsRes
+	var products model.ProductsRes
 	err = json.NewDecoder(res.Body).Decode(&products)
 	if err != nil {
 		return nil, err
