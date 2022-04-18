@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/juanjoss/off_etl/model"
 )
 
-func Fetch() (*model.BrandsRes, error) {
-	url := fmt.Sprintf("https://world.openfoodfacts.org/brands.json")
+func Fetch() (*BrandsRes, error) {
+	url := "https://world.openfoodfacts.org/brands.json"
 	fmt.Println("fetching URL: ", url)
 
 	res, err := http.Get(url)
@@ -23,7 +21,7 @@ func Fetch() (*model.BrandsRes, error) {
 		return nil, errors.New("status is not 200")
 	}
 
-	var brands model.BrandsRes
+	var brands BrandsRes
 	err = json.NewDecoder(res.Body).Decode(&brands)
 	if err != nil {
 		return nil, err

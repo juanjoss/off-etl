@@ -5,7 +5,6 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/juanjoss/off_etl/model"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -24,13 +23,4 @@ func Get() *gorm.DB {
 	}
 
 	return DB
-}
-
-func Migrate() {
-	Get().AutoMigrate(&model.Brand{}, &model.Product{})
-}
-
-func DeleteSchema() {
-	Get().Exec("DELETE FROM brands")
-	Get().Exec("DELETE FROM products")
 }
