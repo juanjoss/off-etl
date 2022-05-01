@@ -1,4 +1,4 @@
-package brand
+package jobs
 
 import (
 	"fmt"
@@ -6,35 +6,29 @@ import (
 	"time"
 
 	"github.com/juanjoss/off_etl/db"
+	"github.com/juanjoss/off_etl/model"
 )
 
-type Generator func() <-chan BrandRes
-
-type Processor func(<-chan BrandRes) <-chan BrandRes
-
-type Consumer func(<-chan BrandRes)
-
-func RunETL() {
+func RunBrandsETL() {
 	start := time.Now()
+	fmt.Println("\nrunning brands ETL...")
 
-	fmt.Println("running brands ETL...")
-
-	load()(
-		transform()(
-			extract()(),
+	loadBrands()(
+		transformBrands()(
+			extractBrands()(),
 		),
 	)
 
 	duration := time.Since(start)
-	fmt.Println(duration)
+	fmt.Printf("%v\n", duration)
 }
 
 // it creates product batches by fetching pages from the API endpoint
-func extract() Generator {
-	return func() <-chan BrandRes {
-		brands := make(chan BrandRes)
+func extractBrands() func() <-chan model.BrandRes {
+	return func() <-chan model.BrandRes {
+		brands := make(chan model.BrandRes)
 
-		brandsRes, err := Fetch()
+		brandsRes, err := FetchBrands()
 		if err != nil {
 			log.Fatalf("error fetching: %v", err)
 		}
@@ -51,9 +45,9 @@ func extract() Generator {
 }
 
 // it takes product batches and makes transformations over them
-func transform() Processor {
-	return func(brands <-chan BrandRes) <-chan BrandRes {
-		transformedBrands := make(chan BrandRes)
+func transformBrands() func(brands <-chan model.BrandRes) <-chan model.BrandRes {
+	return func(brands <-chan model.BrandRes) <-chan model.BrandRes {
+		transformedBrands := make(chan model.BrandRes)
 
 		go func() {
 			defer close(transformedBrands)
@@ -67,8 +61,8 @@ func transform() Processor {
 	}
 }
 
-func load() Consumer {
-	return func(brands <-chan BrandRes) {
+func loadBrands() func(brands <-chan model.BrandRes) {
+	return func(brands <-chan model.BrandRes) {
 		for {
 			b, ok := <-brands
 			if ok {

@@ -24,3 +24,12 @@ func Get() *gorm.DB {
 
 	return DB
 }
+
+func DeleteProductSchema() {
+	Get().Exec("DROP TABLE IF EXISTS products CASCADE")
+	Get().Exec("DROP TABLE IF EXISTS product_brands CASCADE")
+}
+
+func DeleteBrandSchema() {
+	Get().Exec("DROP TABLE IF EXISTS brands CASCADE")
+}

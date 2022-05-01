@@ -11,6 +11,8 @@ services:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=root
       - POSTGRES_DB=off_etl
+    volumes:
+      - /usr/local/pgsql:/usr/local/pgsql
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -20,3 +22,5 @@ services:
       - 80:80
     depends_on:
       - postgres
+    volumes:
+      - /usr/local/pgadmin:/usr/local/pgadmin

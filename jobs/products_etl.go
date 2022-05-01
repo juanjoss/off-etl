@@ -1,4 +1,4 @@
-package product
+package jobs
 
 import (
 	"fmt"
@@ -6,13 +6,8 @@ import (
 	"time"
 
 	"github.com/juanjoss/off_etl/db"
+	"github.com/juanjoss/off_etl/model"
 )
-
-type Generator func() <-chan ProductRes
-
-type Processor func(<-chan ProductRes) <-chan ProductRes
-
-type Consumer func(<-chan ProductRes)
 
 var (
 	apiPageNumber int
@@ -21,10 +16,10 @@ var (
 	iterations    = 2
 )
 
-func RunETL() {
+func RunProductsETL() {
 	start := time.Now()
 
-	fmt.Println("running products ETL...")
+	fmt.Println("\nrunning products ETL...")
 	apiPageNumber = 1
 	numProducts = 0
 
@@ -40,24 +35,23 @@ func RunETL() {
 		// containing apiPageSize number of products per page
 		if apiPageNumber == 2 {
 			iterations = numProducts/apiPageSize + 1
-			fmt.Println("iterations: ", iterations)
 		}
 
-		if i == 10 {
+		if i == 1 {
 			break
 		}
 	}
 
 	duration := time.Since(start)
-	fmt.Println(duration)
+	fmt.Printf("%v\n", duration)
 }
 
 // it creates product batches by fetching pages from the API endpoint
-func extract(page uint) Generator {
-	return func() <-chan ProductRes {
-		products := make(chan ProductRes)
+func extract(page uint) func() <-chan model.ProductRes {
+	return func() <-chan model.ProductRes {
+		products := make(chan model.ProductRes)
 
-		productsRes, err := Fetch(page)
+		productsRes, err := FetchProducts(page)
 		if err != nil {
 			log.Fatalf("error fetching: %v", err)
 		}
@@ -70,8 +64,10 @@ func extract(page uint) Generator {
 
 		go func() {
 			defer close(products)
-			for _, product := range productsRes.Products {
-				products <- product
+			for _, p := range productsRes.Products {
+				if p.HasMandatoryStateTags() {
+					products <- p
+				}
 			}
 		}()
 
@@ -80,25 +76,15 @@ func extract(page uint) Generator {
 }
 
 // it takes product batches and makes transformations over them
-func transform() Processor {
-	return func(products <-chan ProductRes) <-chan ProductRes {
-		transformedProducts := make(chan ProductRes)
+func transform() func(<-chan model.ProductRes) <-chan model.ProductRes {
+	return func(products <-chan model.ProductRes) <-chan model.ProductRes {
+		transformedProducts := make(chan model.ProductRes)
 
 		go func() {
 			defer close(transformedProducts)
 
-			for product := range products {
-				// check for unnamed products
-				if product.Name == "" {
-					product.Name = "unknown"
-				}
-
-				// check for products without brand
-				if len(product.Brands) == 0 {
-					product.Brands = append(product.Brands, "unbranded")
-				}
-
-				transformedProducts <- product
+			for p := range products {
+				transformedProducts <- p
 			}
 		}()
 
@@ -106,8 +92,8 @@ func transform() Processor {
 	}
 }
 
-func load() Consumer {
-	return func(products <-chan ProductRes) {
+func load() func(<-chan model.ProductRes) {
+	return func(products <-chan model.ProductRes) {
 		for {
 			p, ok := <-products
 			if ok {

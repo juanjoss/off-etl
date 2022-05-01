@@ -17,10 +17,12 @@ require (
 	github.com/jackc/pgtype v1.10.0 // indirect
 	github.com/jackc/pgx/v4 v4.15.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/exp v0.0.0-20220428152302-39d4317da171 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 
 require (
+	github.com/buger/jsonparser v1.1.1
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect

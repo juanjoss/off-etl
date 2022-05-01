@@ -1,17 +1,17 @@
 package main
 
 import (
-	"github.com/juanjoss/off_etl/jobs/brand"
-	"github.com/juanjoss/off_etl/jobs/product"
+	"github.com/juanjoss/off_etl/db"
+	"github.com/juanjoss/off_etl/jobs"
 )
 
 func main() {
-	brand.DeleteSchema()
-	product.DeleteSchema()
+	db.DeleteBrandSchema()
+	db.DeleteProductSchema()
 
-	brand.Migrate()
-	product.Migrate()
+	jobs.MigrateBrand()
+	jobs.MigrateProduct()
 
-	brand.RunETL()
-	product.RunETL()
+	jobs.RunBrandsETL()
+	jobs.RunProductsETL()
 }
