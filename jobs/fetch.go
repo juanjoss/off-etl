@@ -15,15 +15,11 @@ var (
 		"code",
 		"product_name",
 		"quantity",
-		"categories",
 		"brands_tags",
-		"countries",
-		"packaging",
 		"image_url",
-		"image_ingredients_url",
-		"image_nutrition_url",
-		"nutriscore_grade",
 		"nutrient_levels",
+		"nutriments",
+		"nutriscore_grade",
 		"states_tags",
 	}
 )

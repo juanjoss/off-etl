@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/juanjoss/off_etl/db"
 	"github.com/juanjoss/off_etl/model"
 )
 
@@ -16,7 +15,7 @@ var (
 	iterations    = 2
 )
 
-func RunProductsETL() {
+func RunProductsETL(repo model.Repository) {
 	start := time.Now()
 
 	fmt.Println("\nrunning products ETL...")
@@ -24,7 +23,7 @@ func RunProductsETL() {
 	numProducts = 0
 
 	for i := 1; i <= iterations; i++ {
-		load()(
+		load(repo)(
 			transform()(
 				extract(uint(apiPageNumber))(),
 			),
@@ -92,18 +91,33 @@ func transform() func(<-chan model.ProductRes) <-chan model.ProductRes {
 	}
 }
 
-func load() func(<-chan model.ProductRes) {
+func load(repo model.Repository) func(<-chan model.ProductRes) {
 	return func(products <-chan model.ProductRes) {
 		for {
-			p, ok := <-products
+			pr, ok := <-products
 			if ok {
-				model, err := p.ToModel()
+				var productBrands model.ProductBrands
+
+				product, err := pr.ToModel()
 				if err != nil {
 					log.Printf("error converting to product model: %v", err.Error())
 					continue
 				}
 
-				db.Get().Create(model)
+				productBrands.Product = product
+
+				// search product brands
+				for _, brandName := range pr.Brands {
+					brand, err := repo.SearchBrand(brandName)
+					if err != nil {
+						log.Printf("unable to find brand with tag = %v", brandName)
+						continue
+					}
+
+					productBrands.Brands = append(productBrands.Brands, brand)
+				}
+
+				repo.AddProductBrand(productBrands)
 			} else {
 				log.Printf("products load process finished (error = %v)", ok)
 				return

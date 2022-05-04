@@ -1,11 +1,7 @@
 package model
 
 import (
-	"fmt"
-
-	"github.com/juanjoss/off_etl/db"
 	"golang.org/x/exp/slices"
-	"gorm.io/gorm"
 )
 
 var MandatoryStateTags = []string{
@@ -25,43 +21,30 @@ type ProductsRes struct {
 }
 
 type ProductRes struct {
-	Barcode         string            `json:"code"`
-	Name            string            `json:"product_name"`
-	Quantity        string            `json:"quantity"`
-	Brands          []string          `json:"brands_tags"`
-	ImageUrl        string            `json:"image_url"`
-	NutriscoreGrade string            `json:"nutriscore_grade"`
-	NutrientLevels  map[string]string `json:"nutrient_levels"`
-	StateTags       []string          `json:"states_tags"`
+	Barcode        string         `json:"code"`
+	Name           string         `json:"product_name"`
+	Quantity       string         `json:"quantity"`
+	Brands         []string       `json:"brands_tags"`
+	ImageUrl       string         `json:"image_url"`
+	NutrientLevels NutrientLevels `json:"nutrient_levels"`
+	Nutriments     Nutriments     `json:"nutriments"`
+	NutriscoreData NutriscoreData `json:"nutriscore_data"`
+	StateTags      []string       `json:"states_tags"`
 }
 
 type Product struct {
-	gorm.Model
-	Barcode  string
-	Name     string
-	Quantity string
-	ImageUrl string
-	Brands   []Brand `gorm:"many2many:product_brands;"`
+	Barcode  string `db:"barcode"`
+	Name     string `db:"name"`
+	Quantity string `db:"quantity"`
+	ImageUrl string `db:"image_url"`
 }
 
-func (p *ProductRes) ToModel() (*Product, error) {
+func (pr *ProductRes) ToModel() (*Product, error) {
 	product := &Product{
-		Barcode:  p.Barcode,
-		Name:     p.Name,
-		Quantity: p.Quantity,
-		ImageUrl: p.ImageUrl,
-		Brands:   []Brand{},
-	}
-
-	// search product brands
-	for _, brandName := range p.Brands {
-		b := Brand{}
-		if err := db.Get().Where("tag = ?", brandName).First(&b).Error; err != nil {
-			product.Brands = append(product.Brands, Brand{Tag: brandName + ":not-found"})
-			continue
-		}
-
-		product.Brands = append(product.Brands, b)
+		Barcode:  pr.Barcode,
+		Name:     pr.Name,
+		Quantity: pr.Quantity,
+		ImageUrl: pr.ImageUrl,
 	}
 
 	return product, nil
@@ -70,7 +53,6 @@ func (p *ProductRes) ToModel() (*Product, error) {
 func (pr *ProductRes) HasMandatoryStateTags() bool {
 	for _, st := range MandatoryStateTags {
 		if !slices.Contains(pr.StateTags, st) {
-			fmt.Println("product ", pr.Name, " doesn't contains state tag ", st)
 			return false
 		}
 	}

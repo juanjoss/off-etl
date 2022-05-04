@@ -1,9 +1,5 @@
 package model
 
-import (
-	"gorm.io/gorm"
-)
-
 type BrandRes struct {
 	Tag string `json:"id"`
 }
@@ -13,8 +9,7 @@ type BrandsRes struct {
 }
 
 type Brand struct {
-	gorm.Model
-	Tag string `gorm:"uniqueIndex"`
+	Tag string `db:"tag"`
 }
 
 func (br *BrandRes) ToModel() *Brand {

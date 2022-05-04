@@ -5,15 +5,14 @@ import (
 	"log"
 	"time"
 
-	"github.com/juanjoss/off_etl/db"
 	"github.com/juanjoss/off_etl/model"
 )
 
-func RunBrandsETL() {
+func RunBrandsETL(repo model.Repository) {
 	start := time.Now()
 	fmt.Println("\nrunning brands ETL...")
 
-	loadBrands()(
+	loadBrands(repo)(
 		transformBrands()(
 			extractBrands()(),
 		),
@@ -23,7 +22,6 @@ func RunBrandsETL() {
 	fmt.Printf("%v\n", duration)
 }
 
-// it creates product batches by fetching pages from the API endpoint
 func extractBrands() func() <-chan model.BrandRes {
 	return func() <-chan model.BrandRes {
 		brands := make(chan model.BrandRes)
@@ -44,7 +42,6 @@ func extractBrands() func() <-chan model.BrandRes {
 	}
 }
 
-// it takes product batches and makes transformations over them
 func transformBrands() func(brands <-chan model.BrandRes) <-chan model.BrandRes {
 	return func(brands <-chan model.BrandRes) <-chan model.BrandRes {
 		transformedBrands := make(chan model.BrandRes)
@@ -61,12 +58,13 @@ func transformBrands() func(brands <-chan model.BrandRes) <-chan model.BrandRes 
 	}
 }
 
-func loadBrands() func(brands <-chan model.BrandRes) {
+func loadBrands(repo model.Repository) func(brands <-chan model.BrandRes) {
 	return func(brands <-chan model.BrandRes) {
 		for {
 			b, ok := <-brands
 			if ok {
-				db.Get().Create(b.ToModel())
+				model := b.ToModel()
+				repo.AddBrand(model)
 			} else {
 				log.Printf("brands load process finished (error = %v)", ok)
 				return
