@@ -96,17 +96,33 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 		for {
 			pr, ok := <-products
 			if ok {
-				var productBrands model.ProductBrands
-
+				// convert product response to product model
 				product, err := pr.ToModel()
 				if err != nil {
 					log.Printf("error converting to product model: %v", err.Error())
 					continue
 				}
 
-				productBrands.Product = product
+				// search for nutrient levels
+				id, err := repo.GetProductNutrientLevelsId(&pr.NutrientLevels)
+				if err != nil {
+					id, err = repo.AddProductNutrientLevels(&pr.NutrientLevels)
+					if err != nil {
+						log.Printf("error inserting nutrient levels for product %v: %v", product.Name, err.Error())
+					}
+				}
 
-				// search product brands
+				product.NutrientLevelsId = id
+
+				// add product
+				err = repo.AddProduct(product)
+				if err != nil {
+					log.Printf("error inserting product %v: %v", product, err.Error())
+				}
+
+				// search product brands and add them
+				var brands []*model.Brand
+
 				for _, brandName := range pr.Brands {
 					brand, err := repo.SearchBrand(brandName)
 					if err != nil {
@@ -114,10 +130,10 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 						continue
 					}
 
-					productBrands.Brands = append(productBrands.Brands, brand)
+					brands = append(brands, brand)
 				}
 
-				repo.AddProductBrand(productBrands)
+				repo.AddProductBrand(product.Barcode, brands)
 			} else {
 				log.Printf("products load process finished (error = %v)", ok)
 				return

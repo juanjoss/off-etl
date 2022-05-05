@@ -7,7 +7,10 @@ type Repository interface {
 	AddProduct(*Product) error
 
 	AddBrand(*Brand) error
-	SearchBrand(tag string) (*Brand, error)
+	SearchBrand(string) (*Brand, error)
 
-	AddProductBrand(ProductBrands)
+	AddProductBrand(string, []*Brand)
+
+	AddProductNutrientLevels(*NutrientLevels) (uint8, error)
+	GetProductNutrientLevelsId(*NutrientLevels) (uint8, error)
 }
