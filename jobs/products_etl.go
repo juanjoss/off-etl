@@ -133,7 +133,10 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 					brands = append(brands, brand)
 				}
 
-				repo.AddProductBrand(product.Barcode, brands)
+				err = repo.AddProductBrands(product.Barcode, brands)
+				if err != nil {
+					log.Printf("error inserting product brands: %v", err.Error())
+				}
 			} else {
 				log.Printf("products load process finished (error = %v)", ok)
 				return

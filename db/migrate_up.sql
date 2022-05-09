@@ -1,4 +1,4 @@
-CREATE TABLE "products" (
+CREATE TABLE IF NOT EXISTS "products" (
   "barcode" text PRIMARY KEY,
   "name" text,
   "quantity" text,
@@ -11,17 +11,17 @@ CREATE TABLE "products" (
   "nutriscore_grade" text NOT NULL
 );
 
-CREATE TABLE "brands" (
+CREATE TABLE IF NOT EXISTS "brands" (
   "tag" text PRIMARY KEY
 );
 
-CREATE TABLE "product_brands" (
+CREATE TABLE IF NOT EXISTS "product_brands" (
   "barcode" text,
   "tag" text,
   PRIMARY KEY ("barcode", "tag")
 );
 
-CREATE TABLE "nutrient_levels" (
+CREATE TABLE IF NOT EXISTS "nutrient_levels" (
   "id" SERIAL PRIMARY KEY,
   "fat" text NOT NULL,
   "saturated_fat" text NOT NULL,
@@ -29,12 +29,12 @@ CREATE TABLE "nutrient_levels" (
   "salt" text NOT NULL
 );
 
-CREATE TABLE "nova_groups" (
+CREATE TABLE IF NOT EXISTS "nova_groups" (
   "group" int PRIMARY KEY,
   "description" text
 );
 
-CREATE TABLE "nutriscore" (
+CREATE TABLE IF NOT EXISTS "nutriscore" (
   "grade" text PRIMARY KEY,
   "description" text
 );

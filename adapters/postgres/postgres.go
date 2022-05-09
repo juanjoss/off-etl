@@ -27,7 +27,7 @@ func NewRepo() *PostgresRepo {
 }
 
 func (pr *PostgresRepo) CreateSchema() {
-	data, err := os.ReadFile("./db/migrate_up.sql")
+	data, err := os.ReadFile("../../db/migrate_up.sql")
 	if err != nil {
 		log.Fatalf("error reading migrate_up: %v", err.Error())
 	}
@@ -36,7 +36,7 @@ func (pr *PostgresRepo) CreateSchema() {
 }
 
 func (pr *PostgresRepo) DeleteSchema() {
-	data, err := os.ReadFile("./db/migrate_down.sql")
+	data, err := os.ReadFile("../../db/migrate_down.sql")
 	if err != nil {
 		log.Fatalf("error reading migrate_down: %v", err.Error())
 	}
@@ -106,10 +106,15 @@ func (pr *PostgresRepo) SearchBrand(tag string) (*model.Brand, error) {
 /*
 	Product Brands
 */
-func (pr *PostgresRepo) AddProductBrand(barcode string, brands []*model.Brand) {
+func (pr *PostgresRepo) AddProductBrands(barcode string, brands []*model.Brand) error {
 	for _, brand := range brands {
-		pr.db.MustExec("INSERT INTO product_brands (barcode, tag) VALUES ($1, $2)", barcode, brand.Tag)
+		_, err := pr.db.Exec("INSERT INTO product_brands (barcode, tag) VALUES ($1, $2)", barcode, brand.Tag)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 /*
