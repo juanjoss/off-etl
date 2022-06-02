@@ -4,10 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/juanjoss/off_etl/model"
+)
+
+const (
+	countryDomain = "world"
 )
 
 var (
@@ -28,9 +33,9 @@ func joinUrlFields() string {
 	return strings.Join(productFields, ",")
 }
 
-func FetchProducts(page uint) (*model.ProductsRes, error) {
-	url := fmt.Sprintf("https://world.openfoodfacts.org/api/v2/search?%s&json=true&page=%d", joinUrlFields(), page)
-	fmt.Println("fetching URL: ", url)
+func FetchProducts(page, pageSize int) (*model.ProductsRes, error) {
+	url := fmt.Sprintf("https://%s.openfoodfacts.org/api/v2/search?%s&json=true&pageSize=%d&page=%d", countryDomain, joinUrlFields(), pageSize, page)
+	log.Printf("\nfetching URL: %s\n", url)
 
 	res, err := http.Get(url)
 
@@ -52,8 +57,8 @@ func FetchProducts(page uint) (*model.ProductsRes, error) {
 }
 
 func FetchBrands() (*model.BrandsRes, error) {
-	url := "https://world.openfoodfacts.org/brands.json"
-	fmt.Println("fetching URL: ", url)
+	url := fmt.Sprintf("https://%s.openfoodfacts.org/brands.json", countryDomain)
+	log.Printf("\nfetching URL: %s\n", url)
 
 	res, err := http.Get(url)
 

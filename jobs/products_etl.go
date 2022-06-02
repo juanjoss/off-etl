@@ -1,64 +1,51 @@
 package jobs
 
 import (
-	"fmt"
 	"log"
 	"time"
 
 	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off_etl/ports"
 )
 
 var (
-	apiPageNumber int
-	numProducts   int
-	apiPageSize   int
-	iterations    = 2
+	apiPageNumber = 1
+	numProducts   = 0
+	apiPageSize   = 100
+	iterations    = 0
 )
 
-func RunProductsETL(repo model.Repository) {
+func RunProductsETL(repo ports.Repository) {
 	start := time.Now()
 
-	fmt.Println("\nrunning products ETL...")
-	apiPageNumber = 1
-	numProducts = 0
+	log.Println("\nrunning products ETL...")
 
-	for i := 1; i <= iterations; i++ {
+	if iterations <= numProducts/apiPageSize {
 		load(repo)(
 			transform()(
-				extract(uint(apiPageNumber))(),
+				extract(apiPageNumber)(),
 			),
 		)
 		apiPageNumber++
-
-		// getting the number of iterations needed to fetch all product pages
-		// containing apiPageSize number of products per page
-		if apiPageNumber == 2 {
-			iterations = numProducts/apiPageSize + 1
-		}
-
-		if i == 1 {
-			break
-		}
+		iterations++
 	}
 
 	duration := time.Since(start)
-	fmt.Printf("%v\n", duration)
+	log.Printf("%v\n", duration)
 }
 
 // it creates product batches by fetching pages from the API endpoint
-func extract(page uint) func() <-chan model.ProductRes {
+func extract(page int) func() <-chan model.ProductRes {
 	return func() <-chan model.ProductRes {
 		products := make(chan model.ProductRes)
 
-		productsRes, err := FetchProducts(page)
+		productsRes, err := FetchProducts(page, apiPageSize)
 		if err != nil {
 			log.Fatalf("error fetching: %v", err)
 		}
 
-		if page == 1 {
-			apiPageNumber = productsRes.Page
+		if apiPageNumber == 1 {
 			numProducts = productsRes.Count
-			apiPageSize = productsRes.PageSize
 		}
 
 		go func() {
@@ -91,7 +78,7 @@ func transform() func(<-chan model.ProductRes) <-chan model.ProductRes {
 	}
 }
 
-func load(repo model.Repository) func(<-chan model.ProductRes) {
+func load(repo ports.Repository) func(<-chan model.ProductRes) {
 	return func(products <-chan model.ProductRes) {
 		for {
 			pr, ok := <-products
@@ -103,6 +90,12 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 					continue
 				}
 
+				// checking for wrong fields in product
+				if product.HasWrongFields() {
+					log.Printf("skipping product %v with wrong fields", product)
+					continue
+				}
+
 				// search for nutrient levels
 				id, err := repo.GetProductNutrientLevelsId(&pr.NutrientLevels)
 				if err != nil {
@@ -110,6 +103,11 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 					if err != nil {
 						log.Printf("error inserting nutrient levels for product %v: %v", product.Name, err.Error())
 					}
+				}
+
+				if id == 0 {
+					log.Printf("skipping product with wrong nutrient levels %v", pr.NutrientLevels)
+					continue
 				}
 
 				product.NutrientLevelsId = id
@@ -124,13 +122,15 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 				var brands []*model.Brand
 
 				for _, brandName := range pr.Brands {
-					brand, err := repo.SearchBrand(brandName)
-					if err != nil {
-						log.Printf("unable to find brand with tag = %v", brandName)
-						continue
-					}
+					if brandName != "" {
+						brand, err := repo.SearchBrand(brandName)
+						if err != nil {
+							log.Printf("unable to find brand with tag = %v", brandName)
+							continue
+						}
 
-					brands = append(brands, brand)
+						brands = append(brands, brand)
+					}
 				}
 
 				err = repo.AddProductBrands(product.Barcode, brands)
@@ -138,7 +138,7 @@ func load(repo model.Repository) func(<-chan model.ProductRes) {
 					log.Printf("error inserting product brands: %v", err.Error())
 				}
 			} else {
-				log.Printf("products load process finished (error = %v)", ok)
+				log.Printf("products load process finished (error = %v)\n", ok)
 				return
 			}
 		}

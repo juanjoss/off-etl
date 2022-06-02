@@ -6,17 +6,23 @@ import (
 	"time"
 
 	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off_etl/ports"
 )
 
-func RunBrandsETL(repo model.Repository) {
+var brandsLoaded = false
+
+func RunBrandsETL(repo ports.Repository) {
 	start := time.Now()
 	fmt.Println("\nrunning brands ETL...")
 
-	loadBrands(repo)(
-		transformBrands()(
-			extractBrands()(),
-		),
-	)
+	if !brandsLoaded {
+		loadBrands(repo)(
+			transformBrands()(
+				extractBrands()(),
+			),
+		)
+		brandsLoaded = true
+	}
 
 	duration := time.Since(start)
 	fmt.Printf("%v\n", duration)
@@ -58,7 +64,7 @@ func transformBrands() func(brands <-chan model.BrandRes) <-chan model.BrandRes 
 	}
 }
 
-func loadBrands(repo model.Repository) func(brands <-chan model.BrandRes) {
+func loadBrands(repo ports.Repository) func(brands <-chan model.BrandRes) {
 	return func(brands <-chan model.BrandRes) {
 		for {
 			b, ok := <-brands

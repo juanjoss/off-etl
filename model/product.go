@@ -72,3 +72,13 @@ func (pr *ProductRes) HasMandatoryStateTags() bool {
 
 	return true
 }
+
+func (p *Product) HasWrongFields() bool {
+	return p.Barcode == "" ||
+		p.Name == "" ||
+		p.Quantity == "" ||
+		p.ImageUrl == "" ||
+		p.NovaGroup > 4 || p.NovaGroup < 1 ||
+		p.NutriscoreScore < -15 || p.NutriscoreScore > 40 ||
+		p.NutriscoreGrade == ""
+}

@@ -1,6 +1,7 @@
-package postgres
+package repository
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -13,8 +14,18 @@ type PostgresRepo struct {
 	db *sqlx.DB
 }
 
-func NewRepo() *PostgresRepo {
-	db, err := sqlx.Connect("postgres", "user=root password=root dbname=off_etl sslmode=disable")
+func NewRepository() *PostgresRepo {
+	host := os.Getenv("DB_HOST")
+	driver := os.Getenv("DB_DRIVER")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	sslMode := os.Getenv("SSL_MODE")
+
+	source := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, dbPort, dbUser, dbPassword, dbName, sslMode)
+
+	db, err := sqlx.Connect(driver, source)
 	if err != nil {
 		log.Fatalf("unable to connect to DB: %v", err.Error())
 	}
@@ -24,24 +35,6 @@ func NewRepo() *PostgresRepo {
 	}
 
 	return repo
-}
-
-func (pr *PostgresRepo) CreateSchema() {
-	data, err := os.ReadFile("../../db/migrate_up.sql")
-	if err != nil {
-		log.Fatalf("error reading migrate_up: %v", err.Error())
-	}
-
-	pr.db.MustExec(string(data))
-}
-
-func (pr *PostgresRepo) DeleteSchema() {
-	data, err := os.ReadFile("../../db/migrate_down.sql")
-	if err != nil {
-		log.Fatalf("error reading migrate_down: %v", err.Error())
-	}
-
-	pr.db.MustExec(string(data))
 }
 
 /*
@@ -168,4 +161,34 @@ func (pr *PostgresRepo) GetProductNutrientLevelsId(nl *model.NutrientLevels) (ui
 	}
 
 	return id, nil
+}
+
+/*
+	ProductOrder event generator function
+*/
+func (pr *PostgresRepo) GetRandomProductFromUserSsd() (int, int, string, error) {
+	var userId, ssdId int
+	var barcode string
+
+	rows, err := pr.db.Query(`
+		SELECT users.id AS userId, ssds.id AS ssdId, product_ssds.barcode AS barcode
+		FROM (users JOIN ssds ON users.id = ssds.id) JOIN product_ssds ON ssds.id = product_ssds.ssd_id
+		ORDER BY RANDOM() 
+		LIMIT 1
+	`)
+	if err != nil {
+		log.Printf("error querying: %v", err.Error())
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&userId, &ssdId, &barcode)
+		if err != nil {
+			log.Printf("error scanning rows: %v", err.Error())
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return userId, ssdId, barcode, err
+	}
+
+	return userId, ssdId, barcode, nil
 }

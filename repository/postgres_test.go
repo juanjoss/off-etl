@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"strings"
@@ -10,9 +10,7 @@ import (
 var pr *PostgresRepo
 
 func Init() {
-	pr = NewRepo()
-	pr.DeleteSchema()
-	pr.CreateSchema()
+	pr = NewRepository()
 }
 
 func TestPostgresRepo(t *testing.T) {
@@ -76,6 +74,4 @@ func TestPostgresRepo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error inserting product brands: %v", err.Error())
 	}
-
-	pr.DeleteSchema()
 }
