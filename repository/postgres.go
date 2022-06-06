@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off-etl/model"
 	_ "github.com/lib/pq"
 )
 

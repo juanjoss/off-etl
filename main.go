@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/jasonlvhit/gocron"
-	"github.com/juanjoss/off_etl/jobs"
-	"github.com/juanjoss/off_etl/repository"
+	"github.com/juanjoss/off-etl/jobs"
+	"github.com/juanjoss/off-etl/repository"
 )
 
 func main() {

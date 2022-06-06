@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off-etl/model"
 )
 
 var pr *PostgresRepo

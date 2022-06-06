@@ -1,7 +1,7 @@
 package ports
 
 import (
-	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off-etl/model"
 )
 
 type Repository interface {

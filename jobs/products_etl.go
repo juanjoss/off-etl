@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/juanjoss/off_etl/model"
-	"github.com/juanjoss/off_etl/ports"
+	"github.com/juanjoss/off-etl/model"
+	"github.com/juanjoss/off-etl/ports"
 )
 
 var (

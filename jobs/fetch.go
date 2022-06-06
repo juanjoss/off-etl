@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/juanjoss/off_etl/model"
+	"github.com/juanjoss/off-etl/model"
 )
 
 const (
