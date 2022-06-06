@@ -8,7 +8,7 @@ RUN apk --no-cache add ca-certificates && update-ca-certificates
 
 WORKDIR /src
 
-COPY /etl/ .
+COPY . .
 
 FROM dev as build
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o etl /main.go
