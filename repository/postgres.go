@@ -101,7 +101,12 @@ func (pr *PostgresRepo) SearchBrand(tag string) (*model.Brand, error) {
 */
 func (pr *PostgresRepo) AddProductBrands(barcode string, brands []*model.Brand) error {
 	for _, brand := range brands {
-		_, err := pr.db.Exec("INSERT INTO product_brands (barcode, tag) VALUES ($1, $2)", barcode, brand.Tag)
+		_, err := pr.db.Exec(`
+			INSERT INTO product_brands (barcode, tag)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING`,
+			barcode, brand.Tag,
+		)
 		if err != nil {
 			return err
 		}
