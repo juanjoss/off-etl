@@ -8,6 +8,8 @@ RUN apk --no-cache add ca-certificates && update-ca-certificates
 
 WORKDIR /src
 
+RUN go install github.com/cespare/reflex@latest
+
 COPY . .
 
 FROM dev as build
