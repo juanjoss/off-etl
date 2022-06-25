@@ -1,7 +1,6 @@
 package jobs
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -9,23 +8,20 @@ import (
 	"github.com/juanjoss/off-etl/ports"
 )
 
-var brandsLoaded = false
-
 func RunBrandsETL(repo ports.Repository) {
 	start := time.Now()
-	fmt.Println("\nrunning brands ETL...")
+	log.Println("running brands ETL...")
 
-	if !brandsLoaded {
+	if !repo.BrandsLoaded() {
 		loadBrands(repo)(
 			transformBrands()(
 				extractBrands()(),
 			),
 		)
-		brandsLoaded = true
 	}
 
 	duration := time.Since(start)
-	fmt.Printf("%v\n", duration)
+	log.Printf("brands load process finished (duration=%v)", duration)
 }
 
 func extractBrands() func() <-chan model.BrandRes {
@@ -34,7 +30,7 @@ func extractBrands() func() <-chan model.BrandRes {
 
 		brandsRes, err := FetchBrands()
 		if err != nil {
-			log.Fatalf("error fetching: %v", err)
+			log.Fatalf("error fetching brands: %v", err)
 		}
 
 		go func() {
@@ -72,7 +68,6 @@ func loadBrands(repo ports.Repository) func(brands <-chan model.BrandRes) {
 				model := b.ToModel()
 				repo.AddBrand(model)
 			} else {
-				log.Printf("brands load process finished (error = %v)", ok)
 				return
 			}
 		}
