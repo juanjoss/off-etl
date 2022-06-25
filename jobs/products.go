@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-co-op/gocron"
 	"github.com/juanjoss/off-etl/model"
 	"github.com/juanjoss/off-etl/ports"
 )
@@ -18,26 +17,15 @@ func RunProductsETL(repo ports.Repository) {
 	start := time.Now()
 	log.Printf("running products ETL with pageSize=%d", apiPageSize)
 
-	schedule(repo)
+	load(repo)(
+		transform(repo)(
+			extract(apiPageNumber)(),
+		),
+	)
+	apiPageNumber++
 
 	duration := time.Since(start)
-	log.Printf("products load process finished (duration=%v)", duration)
-}
-
-func schedule(repo ports.Repository) {
-	s := gocron.NewScheduler(time.UTC)
-	s.LimitRunsTo(50)
-
-	s.Every(1).Second().Do(func() {
-		load(repo)(
-			transform(repo)(
-				extract(apiPageNumber)(),
-			),
-		)
-		apiPageNumber++
-	})
-
-	s.StartBlocking()
+	log.Printf("products (page=%d) load process finished (duration=%v)", apiPageNumber-1, duration)
 }
 
 func extract(page int) func() <-chan model.ProductRes {
