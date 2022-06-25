@@ -35,10 +35,11 @@ type ProductRes struct {
 }
 
 type Product struct {
-	Barcode          string  `db:"barcode"`
-	Name             string  `db:"name"`
-	Quantity         string  `db:"quantity"`
-	ImageUrl         string  `db:"image_url"`
+	Barcode          string `db:"barcode"`
+	Name             string `db:"name"`
+	Quantity         string `db:"quantity"`
+	ImageUrl         string `db:"image_url"`
+	Brands           []*Brand
 	Energy100g       float32 `db:"energy_100g"`
 	EnergyServing    float32 `db:"energy_serving"`
 	NutrientLevelsId uint8   `db:"nutrient_levels_id"`
@@ -53,6 +54,7 @@ func (pr *ProductRes) ToModel() (*Product, error) {
 		Name:            pr.Name,
 		Quantity:        pr.Quantity,
 		ImageUrl:        pr.ImageUrl,
+		Brands:          []*Brand{},
 		Energy100g:      pr.Nutriments.Energy100g,
 		EnergyServing:   pr.Nutriments.EnergyServing,
 		NovaGroup:       pr.Nutriments.NOVA,

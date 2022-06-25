@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -16,6 +15,9 @@ const (
 )
 
 var (
+	/*
+		Product fields used as parameters for a products request URL.
+	*/
 	productFields = []string{
 		"code",
 		"product_name",
@@ -29,22 +31,29 @@ var (
 	}
 )
 
-func joinUrlFields() string {
-	return strings.Join(productFields, ",")
-}
+/*
+	Fetches products from the Open Foods Facts API.
 
+	pageSize indicates the number of products to be fetched per page.
+
+	page indicates the page number to fetch.
+*/
 func FetchProducts(page, pageSize int) (*model.ProductsRes, error) {
-	url := fmt.Sprintf("https://%s.openfoodfacts.org/api/v2/search?%s&json=true&pageSize=%d&page=%d", countryDomain, joinUrlFields(), pageSize, page)
-	log.Printf("\nfetching URL: %s\n", url)
+	url := fmt.Sprintf(
+		"https://%s.openfoodfacts.org/api/v2/search?%s&json=true&pageSize=%d&page=%d",
+		countryDomain,
+		strings.Join(productFields, ","),
+		pageSize,
+		page,
+	)
 
 	res, err := http.Get(url)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode != 200 {
-		return nil, errors.New("status is not 200")
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error fetching products (status is not 200)")
 	}
 
 	var products model.ProductsRes
@@ -56,18 +65,19 @@ func FetchProducts(page, pageSize int) (*model.ProductsRes, error) {
 	return &products, nil
 }
 
+/*
+	Fetches brands from the Open Foods Facts API.
+*/
 func FetchBrands() (*model.BrandsRes, error) {
 	url := fmt.Sprintf("https://%s.openfoodfacts.org/brands.json", countryDomain)
-	log.Printf("\nfetching URL: %s\n", url)
 
 	res, err := http.Get(url)
-
 	if err != nil {
 		return nil, err
 	}
 
-	if res.StatusCode != 200 {
-		return nil, errors.New("status is not 200")
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error fetching brands (status is not 200)")
 	}
 
 	var brands model.BrandsRes

@@ -1,9 +1,5 @@
 package model
 
-var (
-	NutrientLevelsValidFields = []string{"low", "moderate", "high"}
-)
-
 type NutrientLevels struct {
 	Fat          string `json:"fat" db:"fat"`
 	SaturatedFat string `json:"saturated-fat" db:"saturated_fat"`

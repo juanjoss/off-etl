@@ -23,11 +23,14 @@ func NewRepository() *PostgresRepo {
 	dbName := os.Getenv("DB_NAME")
 	sslMode := os.Getenv("SSL_MODE")
 
-	source := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", host, dbPort, dbUser, dbPassword, dbName, sslMode)
+	source := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, dbPort, dbUser, dbPassword, dbName, sslMode,
+	)
 
 	db, err := sqlx.Connect(driver, source)
 	if err != nil {
-		log.Fatalf("unable to connect to DB: %v", err.Error())
+		log.Fatalf("unable to connect to postgres DB: %v", err.Error())
 	}
 
 	repo := &PostgresRepo{
@@ -37,12 +40,9 @@ func NewRepository() *PostgresRepo {
 	return repo
 }
 
-/*
-	Product
-*/
 func (pr *PostgresRepo) AddProduct(product *model.Product) error {
-	_, err := pr.db.NamedExec(`
-		INSERT INTO products (
+	_, err := pr.db.NamedExec(
+		`INSERT INTO products (
 			barcode,
 			name,
 			quantity,
@@ -54,7 +54,8 @@ func (pr *PostgresRepo) AddProduct(product *model.Product) error {
 			nutriscore_score,
 			nutriscore_grade
 		)
-		VALUES (:barcode, 
+		VALUES (
+			:barcode, 
 			:name, 
 			:quantity, 
 			:image_url,
@@ -64,7 +65,8 @@ func (pr *PostgresRepo) AddProduct(product *model.Product) error {
 			:nova_group,
 			:nutriscore_score,
 			:nutriscore_grade
-		)`,
+		)
+		ON CONFLICT DO NOTHING`,
 		product,
 	)
 	if err != nil {
@@ -74,9 +76,6 @@ func (pr *PostgresRepo) AddProduct(product *model.Product) error {
 	return nil
 }
 
-/*
-	Brand
-*/
 func (pr *PostgresRepo) AddBrand(brand *model.Brand) error {
 	_, err := pr.db.NamedExec("INSERT INTO brands (tag) VALUES (:tag)", brand)
 	if err != nil {
@@ -86,7 +85,7 @@ func (pr *PostgresRepo) AddBrand(brand *model.Brand) error {
 	return nil
 }
 
-func (pr *PostgresRepo) SearchBrand(tag string) (*model.Brand, error) {
+func (pr *PostgresRepo) GetBrand(tag string) (*model.Brand, error) {
 	b := &model.Brand{}
 	err := pr.db.Get(b, "SELECT tag FROM brands WHERE tag=$1", tag)
 	if err != nil {
@@ -96,13 +95,26 @@ func (pr *PostgresRepo) SearchBrand(tag string) (*model.Brand, error) {
 	return b, nil
 }
 
-/*
-	Product Brands
-*/
+func (pr *PostgresRepo) BrandsLoaded() bool {
+	var count uint
+
+	pr.db.Get(&count, "SELECT reltuples AS estimate FROM pg_class where relname = 'brands'")
+
+	return count > 0
+}
+
 func (pr *PostgresRepo) AddProductBrands(barcode string, brands []*model.Brand) error {
 	for _, brand := range brands {
-		_, err := pr.db.Exec(`
-			INSERT INTO product_brands (barcode, tag)
+		if barcode == "" || len(barcode) == 0 {
+			continue
+		}
+
+		if brand.Tag == "" || len(brand.Tag) == 0 {
+			continue
+		}
+
+		_, err := pr.db.Exec(
+			`INSERT INTO product_brands (barcode, tag)
 			VALUES ($1, $2)
 			ON CONFLICT DO NOTHING`,
 			barcode, brand.Tag,
@@ -115,13 +127,10 @@ func (pr *PostgresRepo) AddProductBrands(barcode string, brands []*model.Brand) 
 	return nil
 }
 
-/*
-	Product Nutrient Levels
-*/
 func (pr *PostgresRepo) AddProductNutrientLevels(nl *model.NutrientLevels) (uint8, error) {
 	var id uint8
-	row := pr.db.QueryRow(`
-		INSERT INTO nutrient_levels (
+	row := pr.db.QueryRow(
+		`INSERT INTO nutrient_levels (
 			fat, 
 			saturated_fat, 
 			sugar, 
@@ -148,8 +157,8 @@ func (pr *PostgresRepo) AddProductNutrientLevels(nl *model.NutrientLevels) (uint
 
 func (pr *PostgresRepo) GetProductNutrientLevelsId(nl *model.NutrientLevels) (uint8, error) {
 	var id uint8
-	err := pr.db.Get(&id, `
-		SELECT id 
+	err := pr.db.Get(&id,
+		`SELECT id 
 		FROM nutrient_levels 
 		WHERE 
 			fat = $1 AND 
@@ -166,34 +175,4 @@ func (pr *PostgresRepo) GetProductNutrientLevelsId(nl *model.NutrientLevels) (ui
 	}
 
 	return id, nil
-}
-
-/*
-	ProductOrder event generator function
-*/
-func (pr *PostgresRepo) GetRandomProductFromUserSsd() (int, int, string, error) {
-	var userId, ssdId int
-	var barcode string
-
-	rows, err := pr.db.Query(`
-		SELECT users.id AS userId, ssds.id AS ssdId, product_ssds.barcode AS barcode
-		FROM (users JOIN ssds ON users.id = ssds.id) JOIN product_ssds ON ssds.id = product_ssds.ssd_id
-		ORDER BY RANDOM() 
-		LIMIT 1
-	`)
-	if err != nil {
-		log.Printf("error querying: %v", err.Error())
-	}
-
-	for rows.Next() {
-		err = rows.Scan(&userId, &ssdId, &barcode)
-		if err != nil {
-			log.Printf("error scanning rows: %v", err.Error())
-		}
-	}
-	if err = rows.Err(); err != nil {
-		return userId, ssdId, barcode, err
-	}
-
-	return userId, ssdId, barcode, nil
 }

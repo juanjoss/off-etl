@@ -1,11 +1,11 @@
 package model
 
-type BrandRes struct {
-	Tag string `json:"id"`
-}
-
 type BrandsRes struct {
 	Brands []BrandRes `json:"tags"`
+}
+
+type BrandRes struct {
+	Tag string `json:"id"`
 }
 
 type Brand struct {
